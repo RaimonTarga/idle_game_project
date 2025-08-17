@@ -1,20 +1,24 @@
 #include "SlimeEnemy.h"
-#include <cstdlib>   // for rand()
-#include <cmath>     // for cosf, sinf, M_PI
+#include <cstdlib> 
+#include <cmath> 
 #ifndef M_PI
 #define M_PI 3.14159265f
 #endif
 
 SlimeEnemy::SlimeEnemy(Vector2 spawnPos)
-    : Enemy(spawnPos, 16, BLUE, 30) // radius=16, color=BLUE, hp=30
+    : Enemy(spawnPos, 16, BLUE, 30)
 {
     direction = {0, 0};
     moveTimer = 0.0f;
     waitTimer = 0.0f;
-    speed = 80.0f; // slower than player
+    speed = 80.0f;
 }
 
 void SlimeEnemy::Update(float deltaTime) {
+    // This is the correct position for the update call.
+    // It runs every frame to handle damage number logic.
+    Entity::Update(deltaTime);
+
     if (waitTimer > 0.0f) {
         waitTimer -= deltaTime;
         return;

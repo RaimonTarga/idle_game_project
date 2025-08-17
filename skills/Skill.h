@@ -2,26 +2,35 @@
 #include "raylib.h"
 #include <string>
 #include <vector>
-#include "Entity.h"
+
+class Entity;
 
 class Skill {
 protected:
     float cooldown;
     float cooldownTimer;
     float damage;
-    bool isActive;
 
 public:
     Skill(float cooldown, float damage)
-        : cooldown(cooldown), cooldownTimer(0.0f), damage(damage), isActive(false) {}
+        : cooldown(cooldown), cooldownTimer(0.0f), damage(damage) {}
 
     virtual ~Skill() = default;
 
     // Use function now targets a single entity
     virtual void Use(const Vector2& userPosition, Entity& target) = 0;
 
-    virtual void Update(float dt) = 0;
+    // The base class will handle its own cooldown logic
+    virtual void Update(float dt) {
+        if (cooldownTimer > 0.0f) {
+            cooldownTimer -= dt;
+            if (cooldownTimer < 0.0f) {
+                cooldownTimer = 0.0f;
+            }
+        }
+    }
 
+    // A default empty Draw function for skills that don't need one
     virtual void Draw() {}
 
     void ResetCooldown() {

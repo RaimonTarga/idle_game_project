@@ -1,6 +1,6 @@
 #pragma once
-#include "Player.h"
-#include "SlimeEnemy.h"
+#include "entities/Player.h"
+#include "entities/SlimeEnemy.h"
 #include <vector>
 
 class Game {

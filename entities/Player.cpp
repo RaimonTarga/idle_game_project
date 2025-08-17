@@ -1,15 +1,30 @@
 #include "Player.h"
 #include "Enemy.h"
-#include "Slash.h"
+#include "../skills/Slash.h"
+#include "../skills/StrongSlash.h"
 #include "raymath.h"
 #include <limits>
 #include <cmath>
+#include <algorithm>
 
 Player::Player(Vector2 pos, float s)
-    : Entity(pos, 25.0f, GREEN, 100.0f), speed(s), meleeRange(30.0f), 
-    attackCooldown(1.0f), attackTimer(0.0f) {
-    // Instantiate a Slash skill and add it to the skills vector
+    : Entity(pos, 25.0f, GREEN, 100.0f), speed(s), meleeRange(40.0f),
+    attackCooldown(1.0f), // Set this to 1.0f for a one-second delay
+    attackTimer(0.0f),
+    currentSkillIndex(0) {
+
+    // Instantiate all skills and add them to the list in order
     skills.push_back(new Slash());
+    skills.push_back(new Slash());
+    skills.push_back(new Slash());
+    skills.push_back(new StrongSlash());
+}
+
+Player::~Player() {
+    // Correctly deallocate memory for each skill
+    for (auto& skill : skills) {
+        delete skill;
+    }
 }
 
 // Player's main update loop
@@ -39,12 +54,20 @@ void Player::Update(float dt, std::vector<Enemy*>& enemies) {
     // Check if the closest enemy is within melee range
     float distToEnemy = Vector2Distance(position, closest->GetPosition());
 
-    // Use the first skill if the enemy is in range and the skill is off cooldown
+    // New Logic: Check if it's time to execute the next skill in the list
     if (distToEnemy <= meleeRange && attackTimer <= 0.0f) {
-        // Check if there are any skills and if the first one can be used
-        if (!skills.empty() && skills[0]->CanUse()) {
-            skills[0]->Use(GetPosition(), *closest); // Use the skill on the closest enemy
-            attackTimer = attackCooldown; // Reset the player's attack timer
+        // Get the current skill from the list
+        Skill* currentSkill = skills[currentSkillIndex];
+
+        // Check if the current skill is off its own cooldown
+        if (currentSkill->CanUse()) {
+            currentSkill->Use(GetPosition(), *closest);
+            
+            // Advance to the next skill in the list and loop if we reach the end
+            currentSkillIndex = (currentSkillIndex + 1) % skills.size(); 
+            
+            // Reset the player's attack timer for the next skill in the sequence
+            attackTimer = attackCooldown;
         }
     }
     
@@ -55,7 +78,7 @@ void Player::Update(float dt, std::vector<Enemy*>& enemies) {
         position.y += dir.y * speed * dt;
     }
     
-    // Update all equipped skills
+    // Update all equipped skills to manage their individual cooldowns
     for (auto& skill : skills) {
         skill->Update(dt);
     }
@@ -63,28 +86,5 @@ void Player::Update(float dt, std::vector<Enemy*>& enemies) {
     // Check if player is dead
     if (IsDead()) {
         // Implement player death logic here
-    }
-}
-
-// Player's drawing function
-void Player::Draw() {
-    // Draw the player body
-    DrawCircleV(position, radius, color);
-
-    // Draw health bar
-    int barWidth = (int)(radius * 2);
-    int barHeight = 5;
-    int barX = (int)(position.x - radius);
-    int barY = (int)(position.y - radius - 10);
-    DrawRectangle(barX, barY, barWidth, barHeight, BLACK);
-
-    float hpRatio = hp / maxHp;
-    int hpWidth = (int)(barWidth * hpRatio);
-    DrawRectangle(barX, barY, hpWidth, barHeight, RED);
-
-    // This is the crucial part that was missing or incorrect
-    // Loop through all equipped skills and call their Draw method.
-    for (auto& skill : skills) {
-        skill->Draw();
     }
 }

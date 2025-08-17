@@ -13,4 +13,5 @@ public:
 
 private:
     float RandomFloat(float min, float max);
+
 };

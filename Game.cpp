@@ -5,14 +5,17 @@
 #include "string"
 #include <cmath>
 #include <algorithm>
-
+#include "entities/SlimeEnemy.h"
+#include "entities/Player.h"
+#include "managers/UIManager.h"
+#include "managers/DamageNumberManager.h"
+#include "managers/EffectManager.h"
 
 // --- Constructor ---
 Game::Game(Vector2 playerPos) : player(playerPos) {
     spawnTimer = 0;
     srand(static_cast<unsigned int>(time(0)));
     nextSpawnTime = RandomFloat(2, 5); // faster spawn for testing
-    
 }
 
 // --- Destructor ---
@@ -39,16 +42,16 @@ void Game::SpawnEnemy() {
     int attempts = 0;
 
     while (!valid && attempts < 100) {
-        pos = { RandomFloat(player.position.x - 200, player.position.x + 200),
-                RandomFloat(player.position.y - 200, player.position.y + 200) };
+        pos = { RandomFloat(player.GetPosition().x - 200, player.GetPosition().x + 200),
+                RandomFloat(player.GetPosition().y - 200, player.GetPosition().y + 200) };
         valid = true;
 
         // Min distance to player
-        if (Distance(pos, player.position) < minPlayerDist) valid = false;
+        if (Distance(pos, player.GetPosition()) < minPlayerDist) valid = false;
 
         // Min distance to other enemies
         for (auto& e : enemies) {
-            if (Distance(pos, e->position) < minEnemyDist) {
+            if (Distance(pos, e->GetPosition()) < minEnemyDist) {
                 valid = false;
                 break;
             }
@@ -62,10 +65,11 @@ void Game::SpawnEnemy() {
 
 // --- Init game ---
 void Game::Init() {
-    player.position = {0, 0}; // starting at world center
+    // Note: We need a setter for position since it's now protected.
+    // player.SetPosition({0, 0}); // starting at world center
 
     // Dynamic camera offset based on current screen
-    camera.target = player.position;
+    camera.target = player.GetPosition();
     camera.offset = { GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f };
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
@@ -74,14 +78,14 @@ void Game::Init() {
     for (int i = 0; i < 20; i++) {
         float offsetX = RandomFloat(-500, 500);
         float offsetY = RandomFloat(-500, 500);
-        enemies.push_back(new SlimeEnemy({ player.position.x + offsetX, player.position.y + offsetY }));
+        enemies.push_back(new SlimeEnemy({ player.GetPosition().x + offsetX, player.GetPosition().y + offsetY }));
     }
 }
 
 // --- Update ---
 void Game::Update(float dt) {
     player.Update(dt, enemies);
-    camera.target = player.position; // follow player
+    camera.target = player.GetPosition(); // follow player
 
     for (auto& e : enemies) {
         e->Update(dt);
@@ -106,6 +110,10 @@ void Game::Update(float dt) {
         spawnTimer = 0;
         nextSpawnTime = RandomFloat(2, 3); // random spawn interval
     }
+
+    DamageNumberManager::GetInstance().Update(dt);
+    UIManager::GetInstance().Update(dt);
+    EffectManager::GetInstance().Update(dt);
 }
 
 // --- Draw ---
@@ -129,6 +137,16 @@ void Game::Draw() {
     // Draw player
     player.Draw();
 
+    EffectManager::GetInstance().Draw();
+
+    for (auto& e : enemies) {
+        UIManager::GetInstance().DrawHealthBar(e->GetPosition(), e->GetRadius(), e->GetCurrentHP(), e->GetMaxHP());
+    }
+    UIManager::GetInstance().DrawHealthBar(player.GetPosition(), player.GetRadius(), player.GetCurrentHP(), player.GetMaxHP());
+
+
+    DamageNumberManager::GetInstance().Draw();
+
     EndMode2D();
 
     // Debug info on screen
@@ -146,8 +164,8 @@ void Game::Draw() {
     // Draw FPS inside the rectangle
     DrawText(TextFormat("FPS: %d", GetFPS()), boxX + padding, boxY + padding, 20, BLACK);
 
-    DrawText(TextFormat("Player: (%.0f, %.0f)", player.position.x, player.position.y),
-         boxX + padding, boxY + 25, 20, BLACK);
+    DrawText(TextFormat("Player: (%.0f, %.0f)", player.GetPosition().x, player.GetPosition().y),
+           boxX + padding, boxY + 25, 20, BLACK);
 
     EndDrawing();
 }
