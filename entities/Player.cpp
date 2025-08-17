@@ -8,25 +8,29 @@
 #include <limits>
 #include <cmath>
 #include <algorithm>
+#include <iostream>
 
 Player::Player(Vector2 pos, float s)
     : Entity(pos, 25.0f, GREEN, 100.0f), speed(s), meleeRange(40.0f),
-    attackCooldown(1.0f), // Set this to 1.0f for a one-second delay
-    attackTimer(0.0f),
-    currentSkillIndex(0) {
+    attackCooldown(1.0f), attackTimer(0.0f), currentSkillIndex(0) {
 
-    // Instantiate all skills and add them to the list in order
-    skills.push_back(new Slash());
-    skills.push_back(new Slash());
-    skills.push_back(new Slash());
-    skills.push_back(new StrongSlash());
-
+    // Populate availableSkills with unique skills.
+    availableSkills.push_back(new Slash());
+    availableSkills.push_back(new StrongSlash());
+    
+    // Initially, the skill queue is a simple sequence
+    skillQueue.push_back(availableSkills[0]); // Slash
+    skillQueue.push_back(availableSkills[0]); // Slash
+    skillQueue.push_back(availableSkills[0]); // Slash
+    skillQueue.push_back(availableSkills[1]); // StrongSlash
+    
     textureComponent = new TextureComponent("assets/adventurer.png");
 }
 
+
 Player::~Player() {
     // Correctly deallocate memory for each skill
-    for (auto& skill : skills) {
+    for (auto& skill : availableSkills) {
         delete skill;
     }
     delete textureComponent;
@@ -62,14 +66,14 @@ void Player::Update(float dt, std::vector<Enemy*>& enemies) {
     // New Logic: Check if it's time to execute the next skill in the list
     if (distToEnemy <= meleeRange && attackTimer <= 0.0f) {
         // Get the current skill from the list
-        Skill* currentSkill = skills[currentSkillIndex];
+        Skill* currentSkill = skillQueue[currentSkillIndex];
 
         // Check if the current skill is off its own cooldown
         if (currentSkill->CanUse()) {
             currentSkill->Use(GetPosition(), *closest);
             
             // Advance to the next skill in the list and loop if we reach the end
-            currentSkillIndex = (currentSkillIndex + 1) % skills.size(); 
+            currentSkillIndex = (currentSkillIndex + 1) % skillQueue.size(); 
             
             // Reset the player's attack timer for the next skill in the sequence
             attackTimer = attackCooldown;
@@ -84,7 +88,7 @@ void Player::Update(float dt, std::vector<Enemy*>& enemies) {
     }
     
     // Update all equipped skills to manage their individual cooldowns
-    for (auto& skill : skills) {
+    for (auto& skill : skillQueue) {
         skill->Update(dt);
     }
     
@@ -94,8 +98,53 @@ void Player::Update(float dt, std::vector<Enemy*>& enemies) {
     }    
 }
 
+const Skill* Player::GetCurrentSkill() const {
+    // Check if the queue is empty to prevent a crash
+    if (skillQueue.empty()) {
+        return nullptr;
+    }
+    return skillQueue[currentSkillIndex];
+}
+
 void Player::Draw() {
     // We now delegate all drawing to our texture component
     textureComponent->Draw(position, 0.0f, 1.0f);
     UIManager::GetInstance().DrawHealthBar(position, radius, hp, maxHp);
+}
+
+void Player::AddSkillToQueue(Skill* skill) {
+    skillQueue.push_back(skill);
+}
+
+void Player::ReorderSkillInQueue(int originalIndex, int newIndex) {
+    if (originalIndex >= skillQueue.size() || newIndex >= skillQueue.size() + 1) {
+        return; // Indices are out of bounds
+    }
+
+    // Get a reference to the element we want to move
+    Skill* skillToMove = skillQueue[originalIndex];
+
+    // Remove the element from its original position
+    skillQueue.erase(skillQueue.begin() + originalIndex);
+
+    // Insert it into the new position
+    skillQueue.insert(skillQueue.begin() + newIndex, skillToMove);
+}
+
+void Player::RemoveSkillFromQueue(int indexToRemove) {
+    if (indexToRemove < 0 || indexToRemove >= skillQueue.size()) {
+        std::cout << "Warning: Attempted to remove a skill from an invalid index." << std::endl;
+        return;
+    }
+
+    // Safely remove the skill using an iterator
+    skillQueue.erase(skillQueue.begin() + indexToRemove);
+
+    // If the removed skill was the one currently in use, reset the current skill
+    if (currentSkillIndex == indexToRemove) {
+        currentSkillIndex = -1;
+    } else if (currentSkillIndex > indexToRemove) {
+        // If the removed skill was before the current skill, we need to decrement the index of the current skill
+        currentSkillIndex--;
+    }
 }

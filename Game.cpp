@@ -10,17 +10,20 @@
 #include "managers/UIManager.h"
 #include "managers/DamageNumberManager.h"
 #include "managers/EffectManager.h"
+#include "managers/SkillIconManager.h"
 
 // --- Constructor ---
-Game::Game(Vector2 playerPos) : player(playerPos) {
+Game::Game(Vector2 playerPos) : player(playerPos), skillMenu(player) {
     spawnTimer = 0;
     srand(static_cast<unsigned int>(time(0)));
-    nextSpawnTime = RandomFloat(2, 5); // faster spawn for testing
+    nextSpawnTime = RandomFloat(2, 5);
+    state = GameState::PLAYING;
 }
 
 // --- Destructor ---
 Game::~Game() {
     for (auto e : enemies) delete e;
+    SkillIconManager::GetInstance().UnloadIcons();
 }
 
 // --- Helper: Random float in range ---
@@ -83,39 +86,53 @@ void Game::Init() {
 
     // Set up the UI manager to track the player
     UIManager::GetInstance().SetPlayer(player);
+    SkillIconManager::GetInstance().LoadIconsFromDirectory("assets/icons/");
 }
 
 // --- Update ---
 void Game::Update(float dt) {
-    player.Update(dt, enemies);
-    camera.target = player.GetPosition(); // follow player
-
-    for (auto& e : enemies) {
-        e->Update(dt);
+    // New: Check for the 'S' key press to toggle the state
+    if (IsKeyPressed(KEY_S)) {
+        if (state == GameState::PLAYING) {
+            state = GameState::PAUSED;
+        } else {
+            state = GameState::PLAYING;
+        }
     }
 
-    // Remove dead enemies safely
-    enemies.erase(
-        std::remove_if(enemies.begin(), enemies.end(),
-            [](Enemy* e) {
-                if (e->IsDead()) {
-                    delete e; // free memory
-                    return true; // remove from vector
-                }
-                return false;
-            }),
-        enemies.end()
-    );
+    // New: Only run the game logic when the state is PLAYING
+    if (state == GameState::PLAYING) {
+        player.Update(dt, enemies);
+        camera.target = player.GetPosition(); // follow player
 
-    spawnTimer += dt;
-    if (spawnTimer >= nextSpawnTime) {
-        SpawnEnemy();
-        spawnTimer = 0;
-        nextSpawnTime = RandomFloat(2, 3); // random spawn interval
+        for (auto& e : enemies) {
+            e->Update(dt);
+        }
+
+        // Remove dead enemies safely
+        for (auto it = enemies.begin(); it != enemies.end(); /* No increment here */) {
+            if ((*it)->IsDead()) {
+                delete *it;
+                it = enemies.erase(it); // Erase returns an iterator to the next element
+            } else {
+                ++it;
+            }
+        }
+
+        spawnTimer += dt;
+        if (spawnTimer >= nextSpawnTime) {
+            SpawnEnemy();
+            spawnTimer = 0;
+            nextSpawnTime = RandomFloat(2, 3); // random spawn interval
+        }
     }
 
+    if (state == GameState::PAUSED) {
+        skillMenu.Update(); // New: Call the menu's update method
+    }
+
+    // New: UI and other managers still update even when paused
     DamageNumberManager::GetInstance().Update(dt);
-    UIManager::GetInstance().Update(dt);
     EffectManager::GetInstance().Update(dt);
 }
 
@@ -124,31 +141,38 @@ void Game::Draw() {
     BeginDrawing();
     ClearBackground(DARKGRAY);
 
-    BeginMode2D(camera);
+    // Check the game state to decide what to draw
+    if (state == GameState::PLAYING) {
+        // Draw the game world and all in-game elements
+        BeginMode2D(camera);
 
-    // Draw background grid 
-    int spacing = 50;
-    int size = 2000;
-    for (int x = -size; x <= size; x += spacing)
-        DrawLine(x, -size, x, size, GRAY);
-    for (int y = -size; y <= size; y += spacing)
-        DrawLine(-size, y, size, y, GRAY);
+        // Draw background grid 
+        int spacing = 50;
+        int size = 2000;
+        for (int x = -size; x <= size; x += spacing)
+            DrawLine(x, -size, x, size, GRAY);
+        for (int y = -size; y <= size; y += spacing)
+            DrawLine(-size, y, size, y, GRAY);
 
-    // Draw enemies
-    for (auto& e : enemies) e->Draw();
+        // Draw enemies
+        for (auto& e : enemies) e->Draw();
 
-    // Draw player
-    player.Draw();
+        // Draw player
+        player.Draw();
 
-    EffectManager::GetInstance().Draw();
+        EffectManager::GetInstance().Draw();
+        DamageNumberManager::GetInstance().Draw();
 
-    DamageNumberManager::GetInstance().Draw();
+        EndMode2D();
 
-    EndMode2D();
+        // Draw all of the UI elements
+        UIManager::GetInstance().Draw();
 
-    UIManager::GetInstance().Draw();
+    } else { // GameState::PAUSED
+        skillMenu.Draw();
+    }
 
-    // Debug info on screen
+    // These debug elements are drawn regardless of game state
     // Draw white rectangle background
     int padding = 5;
     int boxWidth = 220;
@@ -164,7 +188,7 @@ void Game::Draw() {
     DrawText(TextFormat("FPS: %d", GetFPS()), boxX + padding, boxY + padding, 20, BLACK);
 
     DrawText(TextFormat("Player: (%.0f, %.0f)", player.GetPosition().x, player.GetPosition().y),
-           boxX + padding, boxY + 25, 20, BLACK);
+            boxX + padding, boxY + 25, 20, BLACK);
 
     EndDrawing();
 }

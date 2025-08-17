@@ -1,45 +1,11 @@
 #include "SkillBar.h"
 #include <iostream>
 #include <algorithm>
+#include "../managers/SkillIconManager.h"
+
 
 SkillBar::SkillBar(const Player& player) : player(player) {
-    // Collect unique skills from the player's queue
-    for (const auto& skill : player.GetSkills()) {
-        bool isUnique = true;
-        for (const auto& uniqueSkill : uniqueSkills) {
-            if (skill->GetName() == uniqueSkill->GetName()) {
-                isUnique = false;
-                break;
-            }
-        }
-        if (isUnique) {
-            uniqueSkills.push_back(skill);
-        }
-    }
-    LoadSkillIcons();
-}
-
-SkillBar::~SkillBar() {
-    for (const auto& texture : skillIcons) {
-        UnloadTexture(texture);
-    }
-}
-
-void SkillBar::LoadSkillIcons() {
-    for (const auto& skill : uniqueSkills) {
-        std::string iconPath = "assets/icons/" + skill->GetName() + "Icon.png";
-        Texture2D icon = LoadTexture(iconPath.c_str());
-        if (icon.id == 0) {
-            // Placeholder if the icon is not found
-            std::cout << "Warning: Could not load skill icon: " << iconPath << std::endl;
-            icon = LoadTexture("assets/icons/placeholder.png");
-        }
-        skillIcons.push_back(icon);
-    }
-}
-
-void SkillBar::Update(float dt) {
-    // No update logic needed here, as we get all info from the player in Draw()
+    // The constructor is now empty. The UIManager or SkillMenu will handle this logic.
 }
 
 void SkillBar::Draw() {
@@ -48,41 +14,41 @@ void SkillBar::Draw() {
     int xOffset = 20;
     int yOffset = GetScreenHeight() - iconSize - padding;
 
-    // Calculate the dimensions for the background rectangle
-    // It should be slightly bigger than the skill bar itself.
+    // Get the unique, available skills
+    const std::vector<Skill*>& availableSkills = player.GetAvailableSkills();
+
+    // Check if the current skill exists to prevent a crash
+    const Skill* currentSkillInQueue = player.GetCurrentSkill();
+
     float backgroundPadding = 5.0f;
     float backgroundX = (float)xOffset - backgroundPadding;
     float backgroundY = (float)yOffset - backgroundPadding;
-    float backgroundWidth = (float)uniqueSkills.size() * (iconSize + padding) - padding + 2 * backgroundPadding;
+    float backgroundWidth = (float)availableSkills.size() * (iconSize + padding) - padding + 2 * backgroundPadding;
     float backgroundHeight = (float)iconSize + 2 * backgroundPadding;
-    
-    // Draw the dark gray background rectangle
+
     DrawRectangle(backgroundX, backgroundY, backgroundWidth, backgroundHeight, BLACK);
 
-    for (size_t i = 0; i < uniqueSkills.size(); ++i) {
-        Skill* uniqueSkill = uniqueSkills[i];
-        Texture2D icon = skillIcons[i];
+    for (size_t i = 0; i < availableSkills.size(); ++i) {
+        Skill* uniqueSkill = availableSkills[i];
 
-        // Position of the current icon
+        Texture2D icon = SkillIconManager::GetInstance().GetIcon(uniqueSkill->GetName());
+
         Vector2 iconPosition = { (float)xOffset + (float)i * (iconSize + padding), (float)yOffset };
 
-        // Draw the skill icon
         DrawTextureEx(icon, iconPosition, 0.0f, 1.0f, WHITE);
 
-        // Highlight the current skill in the player's queue
-        if (uniqueSkill->GetName() == player.GetCurrentSkill()->GetName()) {
+        // Highlight the unique skill if it matches the current skill in the queue
+        if (currentSkillInQueue && uniqueSkill->GetName() == currentSkillInQueue->GetName()) {
             DrawRectangleLinesEx({ iconPosition.x, iconPosition.y, (float)iconSize, (float)iconSize }, 4.0f, YELLOW);
         }
 
-        // Draw the cooldown overlay
         if (!uniqueSkill->CanUse()) {
             float cooldownRatio = uniqueSkill->GetCooldownTimer() / uniqueSkill->GetCooldown();
             float barHeight = (float)iconSize * cooldownRatio;
             
-            // Draw a semi-transparent black rectangle
             DrawRectangle(iconPosition.x, iconPosition.y, iconSize, iconSize, Fade(BLACK, 0.5f));
-            // Draw a bar that grows up
             DrawRectangle(iconPosition.x, iconPosition.y + (iconSize - barHeight), iconSize, barHeight, Fade(GRAY, 0.5f));
         }
+        
     }
 }

@@ -34,8 +34,6 @@ public:
     void SetErrorMessage(const std::string& message) {
         errorMessage = message;
     }
-
-    void Update(float dt);
     
     void Draw();
 };

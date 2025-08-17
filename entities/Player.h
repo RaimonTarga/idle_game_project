@@ -10,26 +10,28 @@ class Player : public Entity {
 private:
     float speed;
     float meleeRange;
-    float attackCooldown; // Time between each skill execution
-    float attackTimer;    // Tracks when the next skill can be used
-    std::vector<Skill*> skills;
-    size_t currentSkillIndex; // New: Index of the current skill in the list
-    TextureComponent* textureComponent; // New: A pointer to our texture component
+    float attackCooldown;
+    float attackTimer;
+    // New: Two separate lists for skills
+    std::vector<Skill*> availableSkills;
+    std::vector<Skill*> skillQueue;
+    size_t currentSkillIndex;
+    TextureComponent* textureComponent;
 
 public:
     Player(Vector2 pos, float s = 200.0f);
-    ~Player(); // New: Proper destructor to clean up memory
+    ~Player();
 
-    // This function is not an override of the base Entity's Update
-    void Update(float dt, std::vector<Enemy*>& enemies); 
+    void Update(float dt, std::vector<Enemy*>& enemies);
     
-    // Add a public getter for player position so external classes can access it
     Vector2 GetPosition() const { return position; }
+    void Draw();
 
-    void Draw(); // New: Override the Draw function to use the texture component
+    void AddSkillToQueue(Skill* skill);
+    void ReorderSkillInQueue(int originalIndex, int newIndex);
+    void RemoveSkillFromQueue(int indexToRemove);
 
-    // Getters for SkillBar
-    const std::vector<Skill*>& GetSkills() const { return skills; } // Get the skill list
-    const Skill* GetCurrentSkill() const { return skills[currentSkillIndex]; } // Get the currently queued skill
-    
+    const std::vector<Skill*>& GetAvailableSkills() const { return availableSkills; }
+    const std::vector<Skill*>& GetSkillQueue() const { return skillQueue; }
+    const Skill* GetCurrentSkill() const;
 };

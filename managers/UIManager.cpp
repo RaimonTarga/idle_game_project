@@ -16,12 +16,6 @@ void UIManager::DrawHealthBar(Vector2 position, float radius, float currentHP, f
     DrawRectangle(barX, barY, hpWidth, barHeight, RED);
 }
 
-void UIManager::Update(float dt) {
-    if (skillBar) {
-        skillBar->Update(dt);
-    }
-}
-
 void UIManager::Draw() {
     // Draw the skill bar
     if (skillBar) {

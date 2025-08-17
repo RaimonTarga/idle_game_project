@@ -2,6 +2,13 @@
 #include "entities/Player.h"
 #include "entities/SlimeEnemy.h"
 #include <vector>
+#include "UI/SkillMenu.h"
+
+// New: Define the possible game states
+enum class GameState {
+    PLAYING,
+    PAUSED
+};
 
 class Game {
 public:
@@ -14,10 +21,14 @@ public:
     const float minPlayerDist = 50.0f;
     const float minEnemyDist = 50.0f;
 
+    GameState state;
+
+    SkillMenu skillMenu;
+
     Game(Vector2 playerPos);
     ~Game();
 
-    void Init();        // <-- Added this for setup logic
+    void Init();
     void Update(float dt);
     void Draw();
 

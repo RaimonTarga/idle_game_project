@@ -7,7 +7,6 @@
 
 class SkillBar {
 private:
-    std::vector<Skill*> uniqueSkills;
     std::vector<Texture2D> skillIcons;
     const Player& player; // Reference to the player object
 
@@ -15,8 +14,6 @@ private:
 
 public:
     SkillBar(const Player& player);
-    ~SkillBar();
 
-    void Update(float dt);
     void Draw();
 };
