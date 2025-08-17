@@ -4,9 +4,11 @@
 #include "../skillEffects/SlashEffect.h"
 #include <cmath>
 #include <memory>
+#include <iostream>
 
 void Slash::Use(const Vector2& userPosition, Entity& target) {
     if (!CanUse()) return;
+
     ResetCooldown();
 
     target.TakeDamage(GetDamage());

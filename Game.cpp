@@ -80,6 +80,9 @@ void Game::Init() {
         float offsetY = RandomFloat(-500, 500);
         enemies.push_back(new SlimeEnemy({ player.GetPosition().x + offsetX, player.GetPosition().y + offsetY }));
     }
+
+    // Set up the UI manager to track the player
+    UIManager::GetInstance().SetPlayer(player);
 }
 
 // --- Update ---
@@ -139,15 +142,11 @@ void Game::Draw() {
 
     EffectManager::GetInstance().Draw();
 
-    for (auto& e : enemies) {
-        UIManager::GetInstance().DrawHealthBar(e->GetPosition(), e->GetRadius(), e->GetCurrentHP(), e->GetMaxHP());
-    }
-    UIManager::GetInstance().DrawHealthBar(player.GetPosition(), player.GetRadius(), player.GetCurrentHP(), player.GetMaxHP());
-
-
     DamageNumberManager::GetInstance().Draw();
 
     EndMode2D();
+
+    UIManager::GetInstance().Draw();
 
     // Debug info on screen
     // Draw white rectangle background

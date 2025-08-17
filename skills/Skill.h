@@ -10,10 +10,11 @@ protected:
     float cooldown;
     float cooldownTimer;
     float damage;
+    std::string name; // New: Unique name for the skill
 
 public:
-    Skill(float cooldown, float damage)
-        : cooldown(cooldown), cooldownTimer(0.0f), damage(damage) {}
+    Skill(float cooldown, float damage, const std::string& skillName)
+        : cooldown(cooldown), cooldownTimer(0.0f), damage(damage), name(skillName) {}
 
     virtual ~Skill() = default;
 
@@ -44,4 +45,19 @@ public:
     float GetDamage() const {
         return damage;
     }
+
+    const std::string& GetName() const { 
+        return name; 
+    }
+
+    // New: Getter for cooldown
+    float GetCooldown() const {
+        return cooldown;
+    }
+
+    // New: Getter for cooldown timer
+    float GetCooldownTimer() const {
+        return cooldownTimer;
+    }
+
 };

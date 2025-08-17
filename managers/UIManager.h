@@ -1,10 +1,16 @@
 #pragma once
 #include "raylib.h"
+#include "../UI/SkillBar.h"
+#include "../Entities/Player.h"
+#include <string>
 
 class UIManager {
 private:
+    SkillBar* skillBar;
+    std::string errorMessage;
+
     // Private constructor to prevent external instantiation
-    UIManager() {}
+    UIManager() : skillBar(nullptr) {}
     // Delete copy constructor and assignment operator to prevent duplication
     UIManager(const UIManager&) = delete;
     UIManager& operator=(const UIManager&) = delete;
@@ -15,13 +21,21 @@ public:
         static UIManager instance; // The single instance
         return instance;
     }
-
+    
     // A generic function to draw a health bar
     void DrawHealthBar(Vector2 position, float radius, float currentHP, float maxHP);
     
-    // Optional: for future UI logic
+    void SetPlayer(const Player& player) {
+        if (!skillBar) {
+            skillBar = new SkillBar(player);
+        }
+    }
+    
+    void SetErrorMessage(const std::string& message) {
+        errorMessage = message;
+    }
+
     void Update(float dt);
     
-    // Optional: for future UI drawing logic for other elements
     void Draw();
 };

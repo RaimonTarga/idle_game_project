@@ -1,5 +1,6 @@
 #include "UIManager.h"
-#include "raylib.h"
+#include "../entities/Enemy.h"
+#include <vector>
 
 // The implementation for the health bar drawing
 void UIManager::DrawHealthBar(Vector2 position, float radius, float currentHP, float maxHP) {
@@ -8,20 +9,36 @@ void UIManager::DrawHealthBar(Vector2 position, float radius, float currentHP, f
     int barX = (int)(position.x - radius);
     int barY = (int)(position.y - radius - 10);
 
-    // Draw background bar (black)
     DrawRectangle(barX, barY, barWidth, barHeight, BLACK);
 
-    // Draw hp proportionally to maxHp
     float hpRatio = currentHP / maxHP;
     int hpWidth = (int)(barWidth * hpRatio);
     DrawRectangle(barX, barY, hpWidth, barHeight, RED);
 }
 
-// Update and Draw are currently empty but are good placeholders
 void UIManager::Update(float dt) {
-    // Implement any UI-specific update logic here in the future
+    if (skillBar) {
+        skillBar->Update(dt);
+    }
 }
 
 void UIManager::Draw() {
-    // Implement any general UI drawing logic here in the future
+    // Draw the skill bar
+    if (skillBar) {
+        skillBar->Draw();
+    } else {
+        // Since we are in a non-static method, we can call this->SetErrorMessage directly
+        this->SetErrorMessage("Error: SkillBar not initialized.");
+    }
+
+    // Draw the error message if it exists
+    if (!errorMessage.empty()) {
+        int fontSize = 30;
+        int textWidth = MeasureText(errorMessage.c_str(), fontSize);
+        DrawText(errorMessage.c_str(),
+                 (GetScreenWidth() - textWidth) / 2,
+                 GetScreenHeight() / 2,
+                 fontSize,
+                 RED);
+    }
 }

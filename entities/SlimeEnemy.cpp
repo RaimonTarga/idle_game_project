@@ -1,6 +1,8 @@
 #include "SlimeEnemy.h"
 #include <cstdlib> 
 #include <cmath> 
+#include "../Components/TextureComponent.h"
+#include "../managers/UIManager.h"
 #ifndef M_PI
 #define M_PI 3.14159265f
 #endif
@@ -12,6 +14,7 @@ SlimeEnemy::SlimeEnemy(Vector2 spawnPos)
     moveTimer = 0.0f;
     waitTimer = 0.0f;
     speed = 80.0f;
+    textureComponent = new TextureComponent("assets/slime.png");
 }
 
 void SlimeEnemy::Update(float deltaTime) {
@@ -41,4 +44,10 @@ void SlimeEnemy::Update(float deltaTime) {
 
 float SlimeEnemy::RandomFloat(float min, float max) {
     return min + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (max - min)));
+}
+
+void SlimeEnemy::Draw() {
+    // We now delegate all drawing to our texture component
+    textureComponent->Draw(position, 0.0f, 1.0f);
+    UIManager::GetInstance().DrawHealthBar(position, radius, hp, maxHp);
 }

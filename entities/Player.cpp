@@ -2,6 +2,8 @@
 #include "Enemy.h"
 #include "../skills/Slash.h"
 #include "../skills/StrongSlash.h"
+#include "../Components/TextureComponent.h"
+#include "../managers/UIManager.h"
 #include "raymath.h"
 #include <limits>
 #include <cmath>
@@ -18,6 +20,8 @@ Player::Player(Vector2 pos, float s)
     skills.push_back(new Slash());
     skills.push_back(new Slash());
     skills.push_back(new StrongSlash());
+
+    textureComponent = new TextureComponent("assets/adventurer.png");
 }
 
 Player::~Player() {
@@ -25,6 +29,7 @@ Player::~Player() {
     for (auto& skill : skills) {
         delete skill;
     }
+    delete textureComponent;
 }
 
 // Player's main update loop
@@ -86,5 +91,11 @@ void Player::Update(float dt, std::vector<Enemy*>& enemies) {
     // Check if player is dead
     if (IsDead()) {
         // Implement player death logic here
-    }
+    }    
+}
+
+void Player::Draw() {
+    // We now delegate all drawing to our texture component
+    textureComponent->Draw(position, 0.0f, 1.0f);
+    UIManager::GetInstance().DrawHealthBar(position, radius, hp, maxHp);
 }
